@@ -17,6 +17,15 @@ Open http://localhost:3000. All 40 predefined examples work without an API key. 
 
 Create `.env` using `.env.example` and set the server-only `AI_API_KEY`. Restart the server. Optional `AI_BASE_URL` points to an OpenAI-compatible `/v1` API; `AI_MODEL` defaults to `gpt-6-luna`; set `AI_MODEL=gpt-4o-mini` to use the previous model. Luna requests use `reasoning_effort=none` and `max_completion_tokens=1800`. Never use a `VITE_` prefix for secrets. The new Luna contract test (TC7) has been written but not run, and no live provider call has been verified. Earlier test results predate this migration.
 
+## Windows .exe
+
+```sh
+npm install
+npm run build:exe
+```
+
+Creates `release/s-uvazheniem.exe` (Node.js single executable, UI embedded). Run it: the app starts on http://localhost:3000 (or a free port) and opens the browser; close the console window to exit. For AI, put a `.env` with `AI_API_KEY` next to the `.exe`. The build downloads the matching Windows `node.exe` from nodejs.org into `.cache/`. The exe is unsigned, so Windows SmartScreen may ask for confirmation.
+
 ## Production
 
 ```sh
