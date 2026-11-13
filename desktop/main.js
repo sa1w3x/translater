@@ -19,6 +19,6 @@ app.use((req,res,next)=>{
 app.use(errorHandler);
 const open=url=>{const [cmd,args]=process.platform==='win32'?['cmd',['/c','start','""',url]]:process.platform==='darwin'?['open',[url]]:['xdg-open',[url]];spawn(cmd,args,{stdio:'ignore',detached:true,windowsHide:true}).on('error',()=>{}).unref();};
 const listen=port=>{const server=app.listen(port,'127.0.0.1',()=>{const url=`http://localhost:${server.address().port}`;
- console.log(`С УВАЖЕНИЕМ. запущено: ${url}\nAI: ${process.env.AI_API_KEY?'подключён':'не подключён (работают 40 готовых примеров). Положите .env с AI_API_KEY рядом с .exe'}\nЗакройте это окно, чтобы выйти.`);open(url);});
+ console.log(`С УВАЖЕНИЕМ. запущено: ${url}\nAI: ${(process.env.ANTHROPIC_API_KEY||process.env.AI_API_KEY)?'подключён':'не подключён (работают 40 готовых примеров). Положите .env с ANTHROPIC_API_KEY рядом с .exe'}\nЗакройте это окно, чтобы выйти.`);open(url);});
  server.on('error',e=>{if(e.code==='EADDRINUSE'&&port!==0)listen(0);else{console.error(e);process.exitCode=1;}});};
 listen(Number(process.env.PORT)||3000);

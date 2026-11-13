@@ -15,7 +15,9 @@ Open http://localhost:3000. All 40 predefined examples work without an API key. 
 
 ## Enable AI
 
-Create `.env` using `.env.example` and set the server-only `AI_API_KEY`. Restart the server. Optional `AI_BASE_URL` points to an OpenAI-compatible `/v1` API; `AI_MODEL` defaults to `gpt-6-luna`; set `AI_MODEL=gpt-4o-mini` to use the previous model. Luna requests use `reasoning_effort=none` and `max_completion_tokens=1800`. Never use a `VITE_` prefix for secrets. The new Luna contract test (TC7) has been written but not run, and no live provider call has been verified. Earlier test results predate this migration.
+**Claude:** set `ANTHROPIC_API_KEY` in `.env` (key from https://platform.claude.com/settings/keys). Optional `CLAUDE_MODEL` (default `claude-opus-5-5`; `claude-sonnet-5-5` or `claude-haiku-5-5` are cheaper). Requests use the official Anthropic SDK with low effort and server-side refusal fallback. When `ANTHROPIC_API_KEY` is set it takes priority over the OpenAI-compatible settings below.
+
+**OpenAI-compatible:** Create `.env` using `.env.example` and set the server-only `AI_API_KEY`. Restart the server. Optional `AI_BASE_URL` points to an OpenAI-compatible `/v1` API; `AI_MODEL` defaults to `gpt-6-luna`; set `AI_MODEL=gpt-4o-mini` to use the previous model. Luna requests use `reasoning_effort=none` and `max_completion_tokens=1800`. Never use a `VITE_` prefix for secrets. The new Luna contract test (TC7) has been written but not run, and no live provider call has been verified. Earlier test results predate this migration.
 
 ## Windows .exe
 
@@ -24,7 +26,7 @@ npm install
 npm run build:exe
 ```
 
-Creates `release/s-uvazheniem.exe` (Node.js single executable, UI embedded). Run it: the app starts on http://localhost:3000 (or a free port) and opens the browser; close the console window to exit. For AI, put a `.env` with `AI_API_KEY` next to the `.exe`. The build downloads the matching Windows `node.exe` from nodejs.org into `.cache/`. The exe is unsigned, so Windows SmartScreen may ask for confirmation.
+Creates `release/s-uvazheniem.exe` (Node.js single executable, UI embedded). Run it: the app starts on http://localhost:3000 (or a free port) and opens the browser; close the console window to exit. For AI, put a `.env` with `ANTHROPIC_API_KEY` (or `AI_API_KEY`) next to the `.exe`. The build downloads the matching Windows `node.exe` from nodejs.org into `.cache/`. The exe is unsigned, so Windows SmartScreen may ask for confirmation.
 
 ## Production
 

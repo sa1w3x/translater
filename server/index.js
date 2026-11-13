@@ -13,4 +13,4 @@ if(process.argv.includes('--production')||process.env.NODE_ENV==='production'){
  const {createServer}=await import('vite');const vite=await createServer({root,server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares);
 }
 const port=Number(process.env.PORT)||3000;
-app.listen(port,'0.0.0.0',()=>console.log(`С УВАЖЕНИЕМ. http://localhost:${port} · AI ${process.env.AI_API_KEY?'подключён':'не подключён (демопримеры доступны)'}`));
+app.listen(port,'0.0.0.0',()=>console.log(`С УВАЖЕНИЕМ. http://localhost:${port} · AI ${(process.env.ANTHROPIC_API_KEY||process.env.AI_API_KEY)?'подключён':'не подключён (демопримеры доступны)'}`));

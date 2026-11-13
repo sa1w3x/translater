@@ -59,3 +59,23 @@ test('TC7: Luna defaults and legacy model request contracts',async()=>{
   }
  }
 });
+
+test('TC8: Claude provider uses Anthropic SDK request shape, refusal and errors',async()=>{
+ const claudeEnv={ANTHROPIC_API_KEY:'claude-secret'};
+ const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}});
+ const ok=text=>reply({id:'msg_1',type:'message',role:'assistant',model:'claude-opus-5-5',content:[{type:'thinking',thinking:'',signature:'x'},{type:'text',text}],stop_reason:'end_turn',usage:{input_tokens:1,output_tokens:1}});
+ let request;
+ const result=await translate({...base,level:3,action:'alternative',previous:'Ранее согласовано.'},{env:claudeEnv,fetchImpl:async(url,options)=>{request={url:String(url),headers:new Headers(options.headers),body:JSON.parse(options.body)};return ok('  Вернусь к задаче в рабочее время.  ');}});
+ assert.deepEqual(result,{text:'Вернусь к задаче в рабочее время.',source:'ai'});
+ assert.equal(request.url,'https://api.anthropic.com/v1/messages');
+ assert.equal(request.headers.get('authorization'),'Bearer claude-secret');
+ assert.match(request.headers.get('anthropic-beta'),/server-side-fallback-2026-07-01/);
+ assert.equal(request.body.model,'claude-opus-5-5');assert.equal(request.body.fallbacks,'default');assert.equal(request.body.output_config.effort,'low');
+ assert.match(request.body.system,/HR-директор 3000/);assert.equal(request.body.messages.length,3);assert.equal(request.body.messages[0].content,base.text);
+ assert.ok(!('temperature' in request.body));assert.ok(!('thinking' in request.body));
+ await translate(base,{env:{...claudeEnv,CLAUDE_MODEL:'claude-haiku-5-5'},fetchImpl:async(_u,o)=>{request=JSON.parse(o.body);return ok('x');}});assert.equal(request.model,'claude-haiku-5-5');
+ const refusal=async()=>reply({id:'m',type:'message',role:'assistant',model:'m',content:[],stop_reason:'refusal',usage:{input_tokens:1,output_tokens:0}});
+ await assert.rejects(translate(base,{env:claudeEnv,fetchImpl:refusal}),e=>e.status===502&&/отказался/.test(e.message));
+ await assert.rejects(translate(base,{env:claudeEnv,fetchImpl:async()=>reply({type:'error',error:{type:'authentication_error',message:'bad'}},401)}),e=>e.status===502&&/ANTHROPIC_API_KEY/.test(e.message));
+ const e=examples[3];const demo=await translate({text:e.input,mode:e.mode,level:2},{env:claudeEnv,fetchImpl:refusal});assert.equal(demo.source,'demo');
+});

@@ -7,7 +7,7 @@ export function createApp(){
  if(process.env.TRUST_PROXY==='1')app.set('trust proxy',1);
  app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');res.setHeader('Content-Security-Policy',"frame-ancestors 'self' https://web.telegram.org");next();});
  app.use('/api',express.json({limit:'48kb'}));
- app.get('/api/status',(_req,res)=>res.json({ai:Boolean(process.env.AI_API_KEY)}));
+ app.get('/api/status',(_req,res)=>res.json({ai:Boolean(process.env.ANTHROPIC_API_KEY||process.env.AI_API_KEY)}));
  const requests=new Map();
  const sweep=setInterval(()=>{const now=Date.now();for(const [key,value] of requests)if(now>value.reset)requests.delete(key);},60000);sweep.unref();
  app.post('/api/translate',async(req,res,next)=>{

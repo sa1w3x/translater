@@ -1,3 +1,4 @@
+import Anthropic from '@anthropic-ai/sdk';
 import {findExample, modes} from '../src/examples.js';
 export class ApiError extends Error { constructor(status,message){super(message);this.status=status;} }
 export function validate(body){
@@ -17,9 +18,20 @@ export function systemPrompt(mode,level,action){
 export async function translate(body,{env=process.env,fetchImpl=fetch}={}){
  const {text,mode,level,action='translate',previous=''}=validate(body);
  const fallback=findExample(text,mode);
- if(!env.AI_API_KEY){
+ if(!env.ANTHROPIC_API_KEY&&!env.AI_API_KEY){
   if(fallback && action==='translate') return {text:fallback.output,source:'demo',notice:'Готовый пример · уровень тона и альтернативы доступны с AI'};
   throw new ApiError(503,'AI пока не подключён. Все 40 готовых примеров работают бесплатно; для произвольного текста, смены тона и альтернатив нужен API-ключ на сервере.');
+ }
+ if(env.ANTHROPIC_API_KEY){
+  try{return {text:await askClaude({text,mode,level,action,previous},{env,fetchImpl}),source:'ai'};}
+  catch(error){
+   if(fallback&&action==='translate')return {text:fallback.output,source:'demo',notice:'AI недоступен · показан готовый пример, уровень тона не применяется'};
+   if(error instanceof ApiError)throw error;
+   if(error instanceof Anthropic.AuthenticationError)throw new ApiError(502,'Claude отклонил API-ключ. Проверьте ANTHROPIC_API_KEY.');
+   if(error instanceof Anthropic.RateLimitError)throw new ApiError(502,'Claude перегружен или исчерпан лимит. Попробуйте чуть позже.');
+   if(error instanceof Anthropic.APIConnectionTimeoutError)throw new ApiError(502,'AI не ответил вовремя. Попробуйте ещё раз.');
+   throw new ApiError(502,'Не удалось связаться с AI. Ваш текст не потерян.');
+  }
  }
  const model=env.AI_MODEL||'gpt-6-luna';
  // Luna supports no-reasoning requests for low-latency text rewriting.
@@ -40,4 +52,26 @@ export async function translate(body,{env=process.env,fetchImpl=fetch}={}){
   if(error instanceof ApiError)throw error;
   throw new ApiError(502,error.name==='TimeoutError'?'AI не ответил вовремя. Попробуйте ещё раз.':'Не удалось связаться с AI. Ваш текст не потерян.');
  }
+}
+
+// Claude via the official Anthropic SDK. Model is configurable with CLAUDE_MODEL.
+async function askClaude({text,mode,level,action,previous},{env,fetchImpl}){
+ const client=new Anthropic({apiKey:env.ANTHROPIC_API_KEY,authToken:null,baseURL:env.ANTHROPIC_BASE_URL||'https://api.anthropic.com',fetch:fetchImpl,timeout:60000,maxRetries:1});
+ const messages=[{role:'user',content:text}];
+ if(action==='alternative'&&typeof previous==='string'&&previous)messages.push({role:'assistant',content:previous.slice(0,12000)},{role:'user',content:'Переформулируй иначе, сохранив смысл оригинала.'});
+ const response=await client.beta.messages.create({
+  model:env.CLAUDE_MODEL||'claude-opus-5-5',
+  max_tokens:16000,
+  // Short rewriting task: low effort keeps answers fast.
+  output_config:{effort:'low'},
+  // If a safety classifier declines, the API retries on a fallback model in the same call.
+  betas:['server-side-fallback-2026-07-01'],
+  fallbacks:'default',
+  system:systemPrompt(mode,level,action),
+  messages
+ });
+ if(response.stop_reason==='refusal')throw new ApiError(502,'AI отказался переводить этот текст. Попробуйте другую формулировку.');
+ const result=response.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+ if(!result)throw new ApiError(502,'AI вернул пустой ответ. Попробуйте другую формулировку.');
+ return result;
 }

@@ -11,6 +11,7 @@
     "build:exe": "node desktop/build.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
